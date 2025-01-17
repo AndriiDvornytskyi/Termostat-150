@@ -15,7 +15,8 @@ double Kp = 2.5, Ki = 0.5, Kd = 1.5;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  Serial.println("Init succesful");
   thermo.begin(MAX31865_4WIRE);  // 4 провідне підключення Pt100
   Setpoint = 100.0;  // Задана температура
   pinMode(RELAY_PIN, OUTPUT);
