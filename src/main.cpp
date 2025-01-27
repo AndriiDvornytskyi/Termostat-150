@@ -3,11 +3,11 @@
 #include <PID_v1.h>
 #include <Adafruit_MAX31865.h>
 
-#define RELAY_PIN 7  // вивід для підключення регулюючого транзистора
+#define RELAY_PIN 37  // вивід для підключення регулюючого транзистора
 
 #define RREF 430.0
 #define RNOMINAL 100.0
-Adafruit_MAX31865 thermo = Adafruit_MAX31865(10, 11, 12, 13);  //підключення перетвотювача датчика Pt100
+Adafruit_MAX31865 thermo = Adafruit_MAX31865(10, 11, 12, 13);  // SPI MAX31865 (CS-10, MOSI-11, MISO-12, CLK-13)
 
 // Змінні для ПІД-регулятора
 double Setpoint, Input, Output;
@@ -17,7 +17,7 @@ PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 void setup() {
   Serial.begin(115200);
   Serial.println("Init succesful");
-  thermo.begin(MAX31865_4WIRE);  // 4 провідне підключення Pt100
+  thermo.begin(MAX31865_4WIRE);  // 4-х провідне підключення Pt100
   Setpoint = 100.0;  // Задана температура
   pinMode(RELAY_PIN, OUTPUT);
   pinMode(5, OUTPUT);
@@ -41,7 +41,7 @@ void loop() {
   }
 
   // Виведення значення опору
-  Serial.print("RTD value: ");
+  Serial.print(" RTD value: ");
   Serial.println(rtd);
 
   // Отримання поточної температури
@@ -54,10 +54,13 @@ void loop() {
   analogWrite(RELAY_PIN, Output);
 
   // Виведення значень для налагодження
-  Serial.print("Temperature: ");
-  Serial.print(Input);
+  Serial.print("Setpoint: ");
+  Serial.print(Setpoint);
+  Serial.print(" C Temperature: ");
+  Serial.print(Input), 
   Serial.print(" C  Output: ");
-  Serial.println(Output);
+  Serial.print(Output);
+  
 
   delay(100);  // Затримка для стабільного читання датчика
 }
