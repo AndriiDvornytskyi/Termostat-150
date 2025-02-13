@@ -1,13 +1,23 @@
 #include <Arduino.h>
 #include <Wire.h>
+// #include <SPI.h>
+// #include <Adafruit_GFX.h>
+// #include <Adafruit_ILI9341.h>
 #include <PID_v1.h>
 #include <Adafruit_MAX31865.h>
+
+// #define TFT_CS 37  //підключення дисплея TFT
+// #define TFT_RST 9
+// #define TFT_DC 8
+// #define TFT_MOSI 35
+// #define TFT_SCK 36
+// Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);  // Створення об'єкта дисплея
 
 #define RELAY_PIN 37  // вивід для підключення регулюючого транзистора
 
 #define RREF 430.0
 #define RNOMINAL 100.0
-Adafruit_MAX31865 thermo = Adafruit_MAX31865(10, 11, 12, 13);  // SPI MAX31865 (CS-10, MOSI-11, MISO-12, CLK-13)
+Adafruit_MAX31865 thermo = Adafruit_MAX31865(10, 11, 12, 13);  //підключення перетвотювача датчика Pt100
 
 // Змінні для ПІД-регулятора
 double Setpoint, Input, Output;
@@ -15,20 +25,32 @@ double Kp = 2.5, Ki = 0.5, Kd = 1.5;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 void setup() {
+  // SPI.begin(TFT_SCK, MISO, TFT_MOSI);  // Налаштування SPI з альтернативними пінами
+  // tft.begin();
+  // tft.setRotation(1);
+  // tft.fillScreen(ILI9341_BLACK);
+  // tft.setTextColor(ILI9341_WHITE);
+  // tft.setTextSize(2);
+  // tft.setCursor(10, 10);
+  // tft.print("Termostat 140");
+
   Serial.begin(115200);
-  Serial.println("Init succesful");
-  thermo.begin(MAX31865_4WIRE);  // 4-х провідне підключення Pt100
+  thermo.begin(MAX31865_4WIRE);  // 4 провідне підключення Pt100
+
   Setpoint = 100.0;  // Задана температура
+
   pinMode(RELAY_PIN, OUTPUT);
-  pinMode(5, OUTPUT);
   myPID.SetMode(AUTOMATIC);
   myPID.SetOutputLimits(0, 255);  // Вихід від 0 до 255 (ШІМ)
   myPID.SetSampleTime(100);       // Встановлення періоду опитування ПІД-регулятора на 100 мілісекунд (0.1 секунди)
 }
 
 void loop() {
-  uint16_t rtd = thermo.readRTD(); // Отримання поточного опору RTD
-  uint8_t status = thermo.readFault(); // Перевірка статусу помилок
+  // Отримання поточного опору RTD
+  uint16_t rtd = thermo.readRTD();
+
+  // Перевірка статусу помилок
+  uint8_t status = thermo.readFault();
   if (status) {
     Serial.print("Fault: ");
     if (status & MAX31865_FAULT_HIGHTHRESH) Serial.println("RTD High Threshold");
@@ -41,12 +63,11 @@ void loop() {
   }
 
   // Виведення значення опору
-  Serial.print(" RTD value: ");
-  Serial.println(rtd);
+  //Serial.print("RTD value: ");
+  //Serial.println(rtd);
 
   // Отримання поточної температури
   Input = thermo.temperature(RNOMINAL, RREF);
-  digitalWrite(5, HIGH);
   // Виклик функції обчислення ПІД-регулятора
   myPID.Compute();
 
@@ -56,11 +77,10 @@ void loop() {
   // Виведення значень для налагодження
   Serial.print("Setpoint: ");
   Serial.print(Setpoint);
-  Serial.print(" C Temperature: ");
-  Serial.print(Input), 
-  Serial.print(" C  Output: ");
-  Serial.print(Output);
-  
+  Serial.print(" C | Temperature: ");
+  Serial.print(Input, 3);
+  Serial.print(" C | Output: ");
+  Serial.println(Output);
 
   delay(100);  // Затримка для стабільного читання датчика
 }
