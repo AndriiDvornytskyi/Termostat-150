@@ -11,7 +11,7 @@ Adafruit_MAX31865 thermo = Adafruit_MAX31865(10, 11, 12, 13);  // Підключ
 
 // Змінні для ПІД-регулятора
 double Setpoint, Input, Output;
-double Kp = 3, Ki = 5, Kd = 2500;
+double Kp = 20, Ki = 0.2, Kd = 0.2;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Експоненціальний фільтр
@@ -27,7 +27,7 @@ void setup() {
   thermo.enableBias(true);
   thermo.autoConvert(true);
 
-  Setpoint = 85.0;  // Задана температура
+  Setpoint = 120.0;  // Задана температура
 
   pinMode(RELAY_PIN, OUTPUT);
   myPID.SetMode(AUTOMATIC);
@@ -62,7 +62,21 @@ void loop() {
 
   myPID.Compute();
   analogWrite(RELAY_PIN, Output);
-  
+
+  // Форматуємо вихід у відповідності до вимог Serial Plotter
+  Serial.print(">");
+  Serial.print("rawTemp:");
+  Serial.print(rawTemp, 5);  // Виведення згладженої температури
+  Serial.print(",");
+  Serial.print("filteredTemp:");
+  Serial.print(filteredTemp, 5);  // Виведення згладженої температури
+  Serial.print(",");
+  Serial.print("Setpoint:");
+  Serial.print(Setpoint, 2);  // Виведення заданої температури
+  Serial.print(",");
+  Serial.print("Output:");
+  Serial.print(Output);
+  Serial.print(",");
   // Додаємо вивід P, I, D складових для більш детального моніторингу
   Serial.print("P:");
   Serial.print(myPID.GetPterm());
@@ -72,22 +86,7 @@ void loop() {
   Serial.print(",");
   Serial.print("D:");
   Serial.print(myPID.GetDterm());
-  Serial.print("\n");
-
-  // Форматуємо вихід у відповідності до вимог Serial Plotter
-  Serial.print(">");
-  Serial.print("rawTemp:");
-  Serial.print(rawTemp, 5);  // Виведення згладженої температури
-  
-  Serial.print("filteredTemp:");
-  Serial.print(filteredTemp, 5);  // Виведення згладженої температури
-  Serial.print(",");
-  Serial.print("Setpoint:");
-  Serial.print(Setpoint, 2);  // Виведення заданої температури
-  Serial.print(",");
-  Serial.print("Output:");
-  Serial.print(Output);
-  Serial.print("\r\n");  // Кожен рядок закінчується \r\n
+  Serial.print("\r\n");
 
   // delay(100);  // Затримка між вимірюваннями
 }
