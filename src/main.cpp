@@ -11,7 +11,7 @@ Adafruit_MAX31865 thermo = Adafruit_MAX31865(10, 11, 12, 13);  // Підключ
 
 // Змінні для ПІД-регулятора
 double Setpoint, Input, Output;
-double Kp = 3, Ki = 5, Kd = 2500;
+double Kp = 20, Ki = 5, Kd = 0;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Експоненціальний фільтр
@@ -27,12 +27,12 @@ void setup() {
   thermo.enableBias(true);
   thermo.autoConvert(true);
 
-  Setpoint = 85.0;  // Задана температура
+  Setpoint = 120.0;  // Задана температура
 
   pinMode(RELAY_PIN, OUTPUT);
   myPID.SetMode(AUTOMATIC);
   myPID.SetOutputLimits(0, 255);
-  myPID.SetSampleTime(72);
+  myPID.SetSampleTime(100);
   prevSecond = millis();
 }
 
@@ -72,13 +72,13 @@ void loop() {
   Serial.print(",");
   Serial.print("D:");
   Serial.print(myPID.GetDterm());
-  Serial.print("\n");
+//   Serial.print("\n");
 
   // Форматуємо вихід у відповідності до вимог Serial Plotter
   Serial.print(">");
   Serial.print("rawTemp:");
   Serial.print(rawTemp, 5);  // Виведення згладженої температури
-  
+  Serial.print(",");
   Serial.print("filteredTemp:");
   Serial.print(filteredTemp, 5);  // Виведення згладженої температури
   Serial.print(",");
