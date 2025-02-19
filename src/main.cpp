@@ -113,7 +113,7 @@ void setup() {
     Serial.begin(115200);
 
     xTaskCreatePinnedToCore(TempControlTask, "TempControl", 2048, NULL, 0, &tempControlTaskHandle, 1);
-    xTaskCreatePinnedToCore(SerialMonitorTask, "SerialMonitor", 2048, NULL, 0, &serialMonitorTaskHandle, 1);
+    xTaskCreatePinnedToCore(SerialMonitorTask, "SerialMonitor", 2048, NULL, 1, &serialMonitorTaskHandle, 1);
 }
 
 void loop() {
