@@ -1,7 +1,7 @@
 /***************************************************/
 /*  РОЗКОМЕНТУЙТЕ, ЯКЩО ХОЧЕТЕ ОТРИМУВАТИ ЛОГИ ЧАСУ  */
 /***************************************************/
-// #define LOGS
+// #define LOGS // Змінна для логів часу
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -26,16 +26,17 @@ Adafruit_MAX31865 thermo = Adafruit_MAX31865(MAX_CS_PIN, MAX_DI_PIN, MAX_DO_PIN,
 /*****************************************************/
 /*           НАЛАШТУВАННЯ КЕРУВАННЯ ТЕНАМИ           */
 /*****************************************************/
-#define RELAY_PIN  9    // GPIO для ШІМ (перевірте, чи справді підтримує LEDC)
+#define RELAY_PIN  37   // GPIO для ШІМ (перевірте, чи справді підтримує LEDC)
 
 /*****************************************************/
 /*            НАЛАШТУВАННЯ ПІД-РЕГУЛЯТОРА            */
 /*****************************************************/
 double Setpoint, Input, Output;
-double Kp = 20.0, Ki = 5.0, Kd = 0.0;
+double Kp = 10.0, Ki = 0.05, Kd = 0.0; // Початкові коефіцієнти
 
 // Створюємо PID-регулятор із бібліотеки PID_v1
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+// PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT, 0, 255);
 
 // Експоненціальний фільтр
 static double filteredTemp = 0.0;
@@ -58,16 +59,16 @@ static const uint16_t printPeriodMs = 1000;  // Період виводу, мс
 // Таск із вищим пріоритетом (PID) - викликається кожні 100 мс
 void pidTask(void *pvParameters)
 {
-    TickType_t xLastWakeTime = xTaskGetTickCount();
+    TickType_t xLastWakeTime = xTaskGetTickCount(); // Отримуємо поточний час
     const TickType_t xFrequency = pdMS_TO_TICKS(pidPeriodMs);
-
+    // myPID.SetOutputLimits(0, 255); // ШІМ 8-біт
     for (;;)
     {
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);// Затримка до наступного запуску
 
-#ifdef LOGS
+#ifdef LOGS // Директива  компіляції логів часу
         unsigned long tStart = micros();
-#endif
+#endif // Кінець директиви
 
         // 1. Зчитування температури з MAX31865
         double rawTemp = thermo.temperature(RNOMINAL, RREF);
@@ -155,6 +156,12 @@ void printTask(void *pvParameters)
         Serial.print(filteredTemp, 2);
         Serial.print(",Setpoint:");
         Serial.print(Setpoint, 2);
+        Serial.print(",termKp:");
+        Serial.print(myPID.GetPterm(), 2);
+        Serial.print(",termKi:");
+        Serial.print(myPID.GetIterm(), 2);
+        Serial.print(",termKd:");
+        Serial.print(myPID.GetDterm(), 2);
         Serial.print(",Output:");
         Serial.print(Output, 2);
         Serial.print("\r\n"); // важливо, щоб було \r\n
@@ -280,7 +287,7 @@ void setup()
     pinMode(RELAY_PIN, OUTPUT);
 
     // Початкове значення заданої температури
-    Setpoint = 120.0;
+    Setpoint = 100.0;
 
     // Налаштування PID
     myPID.SetMode(AUTOMATIC);
