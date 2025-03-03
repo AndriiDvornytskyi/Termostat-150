@@ -16,28 +16,30 @@ Adafruit_MAX31865 thermo = Adafruit_MAX31865(MAX_CS_PIN, MAX_DI_PIN, MAX_DO_PIN,
 #define RELAY_PIN 37
 
 double Setpoint, Input, Output;
-double Kp = 10.0, Ki = 0.05, Kd = 0.01;
+double Kp = 10.0, Ki = 0.08, Kd = 0.01;
 
 // Створення PID регулятора з відповідним діапазоном вихідного сигналу
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT, 0, 65535);
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT, 0, 4095);
 
 static double filteredTemp = 0.0;
-static double alpha = 0.005;
+static double alpha = 0.01;
 static double rawTempGlobal = 0.0;
 
 volatile int readCount = 0;
 static const uint16_t pidPeriodMs = 100;
-static const uint16_t printPeriodMs = 1000;
+static const uint16_t printPeriodMs = 100;
 
 void pidTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(pidPeriodMs);
+    static bool filterInitialized = false; // нова змінна для ініціалізації фільтра
     for (;;) {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
         double rawTemp = thermo.temperature(RNOMINAL, RREF);
         rawTempGlobal = rawTemp;
-        if (readCount == 0) {
+        if (!filterInitialized) {
             filteredTemp = rawTemp;
+            filterInitialized = true;
         } else {
             filteredTemp = alpha * rawTemp + (1.0 - alpha) * filteredTemp;
         }
@@ -64,19 +66,19 @@ void printTask(void *pvParameters) {
         Serial.print(" Kd:");
         Serial.println(Kd);
         Serial.print(">rawTemp:");
-        Serial.print(rawTempGlobal, 2);
+        Serial.print(rawTempGlobal, 5);
         Serial.print(",filteredTemp:");
-        Serial.print(filteredTemp, 2);
+        Serial.print(filteredTemp, 5);
         Serial.print(",Setpoint:");
         Serial.print(Setpoint, 2);
-        Serial.print(",termKp:");
-        Serial.print(myPID.GetPterm(), 2);
-        Serial.print(",termKi:");
-        Serial.print(myPID.GetIterm(), 2);
-        Serial.print(",termKd:");
-        Serial.print(myPID.GetDterm(), 2);
+        Serial.print(",Pterm:");
+        Serial.print(myPID.GetPterm(), 3);
+        Serial.print(",Iterm:");
+        Serial.print(myPID.GetIterm(), 3);
+        Serial.print(",Dterm:");
+        Serial.print(myPID.GetDterm(), 3);
         Serial.print(",Output:");
-        Serial.print(Output, 2);
+        Serial.print(myPID.GetPercentageOutput(), 3);
         Serial.print("\r\n");
     }
 }
@@ -162,13 +164,13 @@ void setup() {
     delay(1000);
     thermo.begin(MAX31865_4WIRE);
     pinMode(RELAY_PIN, OUTPUT);
-    Setpoint = 100.0;
+    Setpoint = 105.0;
     
     // Встановлення 16-бітного режиму ШІМ
-    analogWriteResolution(16);
+    analogWriteResolution(12);
     
     myPID.SetMode(AUTOMATIC);
-    // myPID.SetOutputLimits(0, 65535);
+    myPID.SetOutputLimits(0, 100);
     myPID.SetSampleTime(pidPeriodMs);
     xTaskCreatePinnedToCore(pidTask, "PID Task", 4096, NULL, 2, NULL, 1);
     xTaskCreatePinnedToCore(printTask, "Print Task", 2048, NULL, 1, NULL, 1);
