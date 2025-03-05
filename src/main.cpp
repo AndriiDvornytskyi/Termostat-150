@@ -16,7 +16,7 @@ Adafruit_MAX31865 thermo = Adafruit_MAX31865(MAX_CS_PIN, MAX_DI_PIN, MAX_DO_PIN,
 #define RELAY_PIN 37
 
 double Setpoint, Input, Output;
-double Kp = 10.0, Ki = 0.08, Kd = 0.01;
+double Kp = 10.0, Ki = 0.02, Kd = 0.05;
 
 // Створення PID регулятора з відповідним діапазоном вихідного сигналу
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT, 0, 4095);
@@ -27,7 +27,7 @@ static double rawTempGlobal = 0.0;
 
 volatile int readCount = 0;
 static const uint16_t pidPeriodMs = 100;
-static const uint16_t printPeriodMs = 100;
+static const uint16_t printPeriodMs = 10000;
 
 void pidTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -164,7 +164,7 @@ void setup() {
     delay(1000);
     thermo.begin(MAX31865_4WIRE);
     pinMode(RELAY_PIN, OUTPUT);
-    Setpoint = 105.0;
+    Setpoint = 60.0;
     
     // Встановлення 16-бітного режиму ШІМ
     analogWriteResolution(12);
